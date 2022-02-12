@@ -50,9 +50,19 @@ jobs:
       # https://github.com/internetarchive/deploy/blob/main/action.yml
       - uses: internetarchive/deploy@v1
         with:
+          # ACTION ITEM: change these 2 values to what's appropriate to your HinD/nomad cluster
+          BASE_DOMAIN: 'code.archive.org'
+          NOMAD_ADDR: 'https://ux-dev0.us.archive.org',
+
+          # ACTION ITEM: add a GitHub repository Secret with value from your cluster's credential
+          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+
+          # Pattern you can use to pass a GitHub secrets into env vars in running container
+          NOMAD_SECRETS: '{ "TOKEN3"="${{ secrets.TOKEN3 }}", "MY_URL"="${{ secrets.MY_URL }}" }'
+
+          # why?  https://github.com/internetarchive/hind/blob/main/README.md#setting-up-jobs
           NOMAD_VAR_PORTS: '{ -1 = "http" }'
           NOMAD_VAR_NETWORK_MODE: 'host'
-          BASE_DOMAIN: 'code.archive.org'
-          NOMAD_ADDR: 'https://ux-dev0.us.archive.org'
-          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+
+          # this is taken care of automatically
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
