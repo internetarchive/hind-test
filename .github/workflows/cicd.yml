@@ -52,7 +52,7 @@ jobs:
         with:
           # ACTION ITEM: change these 2 values to what's appropriate to your HinD/nomad cluster
           BASE_DOMAIN: 'code.archive.org'
-          NOMAD_ADDR: 'https://ux-dev0.us.archive.org',
+          NOMAD_ADDR: 'https://ux-dev0.us.archive.org'
 
           # ACTION ITEM: add a GitHub repository Secret with value from your cluster's credential
           NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
