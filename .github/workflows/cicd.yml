@@ -51,7 +51,7 @@ jobs:
       - uses: internetarchive/deploy@v1
         with:
           NOMAD_VAR_PORTS: '{ -1 = "http" }'
-#xxx      NOMAD_VAR_NETWORK_MODE: 'host'
+          NOMAD_VAR_NETWORK_MODE: 'host'
           BASE_DOMAIN: 'code.archive.org'
           NOMAD_ADDR: 'https://ux-dev0.us.archive.org'
           NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
