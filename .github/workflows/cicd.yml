@@ -1,36 +1,7 @@
-name: CICD
 on: push
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-       contents: read
-       packages: write
-       id-token: write
-    steps:
-      # https://github.com/internetarchive/build/blob/main/action.yml
-      - uses: internetarchive/build@v1
-        with:
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  image-test:
-    runs-on: ubuntu-latest
-    needs: [build]
-    container:
-      # test using the just built-and-pushed docker image from the [build] job above
-      image: 'docker://ghcr.io/${{ github.repository }}:${{ github.ref_name }}'
-    steps:
-    - run: fgrep 'hello from HinD' /app/index.js
-
   lint:
-    runs-on: ubuntu-latest
-    container:
-      # https://github.com/internetarchive/dyno
-      image: ghcr.io/internetarchive/dyno:main
-    steps:
-    - uses: actions/checkout@v2
-    - run: /app/lint
+    uses: internetarchive/dyno/.github/workflows/lint.yml@main
 
   test:
     runs-on: ubuntu-latest
@@ -38,31 +9,27 @@ jobs:
       # https://github.com/internetarchive/dyno
       image: ghcr.io/internetarchive/dyno:main
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - run: /app/test/test.sh
 
-  deploy:
+  cicd:
+    uses: internetarchive/cicd/.github/workflows/cicd.yml@main
+    needs: [lint, test]
+    secrets:
+      # ACTION ITEM: add a GitHub repository Secret with value from your cluster's credential
+      NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+      # Pattern you can use to pass a GitHub secrets into env vars in running container
+      NOMAD_SECRETS: '{ "TOKEN3"="${{ secrets.TOKEN3 }}", "MY_URL"="${{ secrets.MY_URL }}" }'
+    with:
+      # ACTION ITEM: change these 2 values to what's appropriate to your HinD/nomad cluster
+      BASE_DOMAIN: 'code.archive.org'
+      NOMAD_ADDR: 'https://ux-dev0.us.archive.org'
+
+  image-test:
     runs-on: ubuntu-latest
-    needs: [build, image-test, lint, test]
-    permissions:
-       packages: read
+    needs: [cicd]
+    container:
+      # test using the just built-and-pushed docker image from the [cicd] job above
+      image: 'docker://ghcr.io/${{ github.repository }}:${{ github.ref_name }}'
     steps:
-      # https://github.com/internetarchive/deploy/blob/main/action.yml
-      - uses: internetarchive/deploy@v1
-        with:
-          # ACTION ITEM: change these 2 values to what's appropriate to your HinD/nomad cluster
-          BASE_DOMAIN: 'code.archive.org'
-          NOMAD_ADDR: 'https://ux-dev0.us.archive.org'
-
-          # ACTION ITEM: add a GitHub repository Secret with value from your cluster's credential
-          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
-
-          # Pattern you can use to pass a GitHub secrets into env vars in running container
-          NOMAD_SECRETS: '{ "TOKEN3"="${{ secrets.TOKEN3 }}", "MY_URL"="${{ secrets.MY_URL }}" }'
-
-          # why?  https://github.com/internetarchive/hind/blob/main/README.md#setting-up-jobs
-          NOMAD_VAR_PORTS: '{ -1 = "http" }'
-          NOMAD_VAR_NETWORK_MODE: 'host'
-
-          # this is taken care of automatically
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - run: fgrep 'hello js' /app/index.js
